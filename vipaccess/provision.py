@@ -31,8 +31,7 @@ except ImportError:
     import urllib
 
 import requests
-from Crypto.Cipher import AES
-from Crypto.Random import random
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import xml.etree.ElementTree as etree
 from oath import totp, hotp
 from vipaccess.version import __version__
@@ -150,8 +149,9 @@ def get_token_from_response(response_xml):
 
 def decrypt_key(token_iv, token_cipher):
     '''Decrypt the OTP key using the hardcoded AES key.'''
-    decryptor = AES.new(TOKEN_ENCRYPTION_KEY, AES.MODE_CBC, token_iv)
-    decrypted = decryptor.decrypt(token_cipher)
+    cipher = Cipher(algorithms.AES(TOKEN_ENCRYPTION_KEY), modes.CBC(token_iv))
+    decryptor = cipher.decryptor()
+    decrypted = decryptor.update(token_cipher) + decryptor.finalize()
 
     # "decrypted" has PKCS#7 padding on it, so we need to remove that
     if type(decrypted[-1]) != int:
